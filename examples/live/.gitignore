@@ -4,3 +4,5 @@ injections.hdf
 stat*.hdf
 output/
 *.fits
+tmp
+*.hdf5

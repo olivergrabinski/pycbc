@@ -1,0 +1,9 @@
+services:
+  generate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /workspace
+    command: bash generate.sh
+    volumes:
+      - ./tmp:/workspace/tmp

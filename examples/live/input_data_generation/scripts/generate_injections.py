@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import numpy as np
 from pycbc.io import FieldArray
@@ -38,5 +39,10 @@ samples['dec'] = [np.deg2rad(45), np.deg2rad(-45), np.deg2rad(-45)]
 
 samples['approximant'] = ['SEOBNRv4_opt', 'SpinTaylorT4', 'SpinTaylorT4']
 
-InjectionSet.write('injections.hdf', samples, static_args=static_params,
+output_path = sys.argv[1] if len(sys.argv) > 1 else 'injections.hdf'
+output_dir = os.path.dirname(os.path.abspath(output_path))
+if output_dir:
+    os.makedirs(output_dir, exist_ok=True)
+
+InjectionSet.write(output_path, samples, static_args=static_params,
                    injtype='cbc', cmd=" ".join(sys.argv))

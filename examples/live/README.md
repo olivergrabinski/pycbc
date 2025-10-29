@@ -82,3 +82,11 @@ kubectl delete -f k8s/pv.yaml
 ```
 
 With these steps the MPI job should locate the ROM data and the generated inputs, and PyCBC Live will write its outputs back into the shared volume. Be sure to rebuild the image (`docker build …`) after any Dockerfile changes so Minikube receives the updates.
+
+---
+
+## Follow-up TODOs
+
+- [ ] Clean up the unused `MPI_OPTS` logic in `k8s/run.sh` so `MPI_HOST_ARGS`, `MPI_NP`, and `MPI_EXTRA_FLAGS` actually affect the launch configuration.
+- [ ] Audit the SSH setup in `k8s/entrypoint.sh` / Dockerfile (capabilities, config tweaks) and replace it with a minimal solution documented for the MPI Operator.
+- [ ] Drop `--allow-run-as-root` in `k8s/run.sh` by running the workload under a non-root user or adjusting MPI permissions accordingly.

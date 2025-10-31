@@ -37,24 +37,26 @@ except ImportError:
     GraceDb = None
 
 
-parse_args_cpu_only("io.gracedb")
+# parse_args_cpu_only("io.gracedb")
 
 
 class TestIOGraceDB(unittest.TestCase):
     def setUp(self):
-        self.template = {'template_id': 0,
-                         'mass1': 10,
-                         'mass2': 11,
-                         'spin1x': 0,
-                         'spin1y': 0,
-                         'spin1z': 0,
-                         'spin2x': 0,
-                         'spin2y': 0,
-                         'spin2z': 0}
+        self.template = {
+            "template_id": 0,
+            "mass1": 10,
+            "mass2": 11,
+            "spin1x": 0,
+            "spin1y": 0,
+            "spin1z": 0,
+            "spin2x": 0,
+            "spin2y": 0,
+            "spin2z": 0,
+        }
 
-        self.possible_ifos = 'H1 L1 V1 K1 I1'.split()
+        self.possible_ifos = "H1 L1 V1 K1 I1".split()
 
-    def do_test(self, n_ifos, n_ifos_extra):
+    def do_test(self, n_ifos, n_ifos_extra, gracedb_server=None, force_noauth=True):
         # choose a random selection of interferometers
         # n_ifos will be used to generate the simulated trigger including
         # significance followup
@@ -64,8 +66,10 @@ class TestIOGraceDB(unittest.TestCase):
         # take 2 ifos to represent the initial coinc trigger
         coinc_ifos = all_ifos[0:2]
 
-        results = {'foreground/stat': np.random.uniform(4, 20),
-                   'foreground/ifar': np.random.uniform(0.01, 1000)}
+        results = {
+            "foreground/stat": np.random.uniform(4, 20),
+            "foreground/ifar": np.random.uniform(0.01, 1000),
+        }
         skyloc_data = {}
         for ifo in all_ifos:
             offset = 10000 + np.random.uniform(-0.02, 0.02)
@@ -73,54 +77,62 @@ class TestIOGraceDB(unittest.TestCase):
 
             # generate a mock SNR time series with a peak
             n = 201
-            dt = 1. / 2048.
+            dt = 1.0 / 2048.0
             t = np.arange(n) * dt
             t_peak = dt * n / 2
-            snr = np.exp(-(t - t_peak) ** 2 * 3e-3 ** -2) * amplitude
-            snr_series = TimeSeries((snr + 1j * 0).astype(np.complex64),
-                                    delta_t=dt, epoch=offset)
+            snr = np.exp(-((t - t_peak) ** 2) * 3e-3**-2) * amplitude
+            snr_series = TimeSeries(
+                (snr + 1j * 0).astype(np.complex64), delta_t=dt, epoch=offset
+            )
 
             # generate a mock PSD
             psd_samples = np.random.exponential(size=1024)
-            psd = FrequencySeries(psd_samples, delta_f=1.)
+            psd = FrequencySeries(psd_samples, delta_f=1.0)
 
             # fill in the various fields
             if ifo in trig_ifos:
-                base = 'foreground/' + ifo + '/'
-                results[base + 'end_time'] = t_peak + offset
-                results[base + 'snr'] = amplitude
-                results[base + 'sigmasq'] = np.random.uniform(1e6, 2e6)
-            skyloc_data[ifo] = {'snr_series': snr_series,
-                                  'psd': psd}
+                base = "foreground/" + ifo + "/"
+                results[base + "end_time"] = t_peak + offset
+                results[base + "snr"] = amplitude
+                results[base + "sigmasq"] = np.random.uniform(1e6, 2e6)
+            skyloc_data[ifo] = {"snr_series": snr_series, "psd": psd}
 
         for ifo, k in itertools.product(trig_ifos, self.template):
-            results['foreground/' + ifo + '/' + k] = self.template[k]
+            results["foreground/" + ifo + "/" + k] = self.template[k]
 
-        channel_names = {ifo: 'TEST' for ifo in all_ifos}
-        kwargs = {'psds': {ifo: skyloc_data[ifo]['psd'] for ifo in all_ifos},
-                  'low_frequency_cutoff': 20.,
-                  'skyloc_data': skyloc_data,
-                  'channel_names': channel_names}
+        channel_names = {ifo: "TEST" for ifo in all_ifos}
+        kwargs = {
+            "psds": {ifo: skyloc_data[ifo]["psd"] for ifo in all_ifos},
+            "low_frequency_cutoff": 20.0,
+            "skyloc_data": skyloc_data,
+            "channel_names": channel_names,
+        }
         coinc = CandidateForGraceDB(coinc_ifos, trig_ifos, results, **kwargs)
 
         tempdir = tempfile.mkdtemp()
 
-        coinc_file_name = os.path.join(tempdir, 'coinc.xml.gz')
+        coinc_file_name = os.path.join(tempdir, "coinc.xml.gz")
 
         if GraceDb is not None:
-            # pretend to upload the event to GraceDB.
-            # The upload will fail, but it should not raise an exception
-            # and it should still leave the event file around
-            coinc.upload(coinc_file_name, gracedb_server='localhost',
-                         testing=True, force_noauth=True)
+            # Pretend to upload the event to GraceDB. The upload may fail in
+            # environments without a server, but it should not raise an
+            # exception and it should still leave the event file around.
+            upload_kwargs = {"testing": True}
+            if force_noauth:
+                upload_kwargs["force_noauth"] = True
+            if gracedb_server is not None:
+                upload_kwargs["gracedb_server"] = gracedb_server
+            else:
+                upload_kwargs["gracedb_server"] = "localhost"
+            coinc.upload(coinc_file_name, **upload_kwargs)
         else:
             # no GraceDb module, so just save the coinc file
             coinc.save(coinc_file_name)
 
         # read back and check the coinc document
         read_coinc = ligolw_utils.load_filename(
-                coinc_file_name, verbose=False,
-                contenthandler=LIGOLWContentHandler)
+            coinc_file_name, verbose=False, contenthandler=LIGOLWContentHandler
+        )
         single_table = lsctables.SnglInspiralTable.get_table(read_coinc)
         self.assertEqual(len(single_table), len(all_ifos))
         coinc_table = lsctables.CoincInspiralTable.get_table(read_coinc)
@@ -128,12 +140,13 @@ class TestIOGraceDB(unittest.TestCase):
 
         # make sure lalseries can read the PSDs
         psd_doc = ligolw_utils.load_filename(
-                coinc_file_name, verbose=False,
-                contenthandler=lalseries.PSDContentHandler)
+            coinc_file_name, verbose=False, contenthandler=lalseries.PSDContentHandler
+        )
         psd_dict = lalseries.read_psd_xmldoc(psd_doc)
         self.assertEqual(set(psd_dict.keys()), set(all_ifos))
 
         shutil.rmtree(tempdir)
+        return coinc
 
     def test_2_ifos_no_followup(self):
         self.do_test(2, 0)
@@ -165,10 +178,44 @@ class TestIOGraceDB(unittest.TestCase):
     def test_4_ifos_1_followup(self):
         self.do_test(4, 1)
 
+    def test_upload_to_local_gracedb(self):
+        if GraceDb is None:
+            self.skipTest("GraceDB client not installed")
+        gracedb_url = os.environ.get(
+            "PYCBC_TEST_GRACEDB_URL", "http://localhost:8080/api/"
+        )
+        force_noauth_env = os.environ.get("PYCBC_TEST_GRACEDB_FORCE_NOAUTH", "1")
+        force_noauth = force_noauth_env.lower() not in ("0", "false", "no")
+        try:
+            gdb_kwargs = {
+                "service_url": gracedb_url,
+                "reload_certificate": True,
+                "reload_buffer": 1,
+            }
+            if force_noauth:
+                gdb_kwargs["force_noauth"] = True
+            client = GraceDb(**gdb_kwargs)
+            response = client.ping()
+        except Exception as exc:
+            self.skipTest(f"GraceDB server unavailable at {gracedb_url}: {exc}")
+        else:
+            status = getattr(response, "status", None)
+            if status is not None and status >= 400:
+                self.skipTest(f"GraceDB server ping failed with status {status}")
+
+        random.seed(12345)
+        np.random.seed(12345)
+        coinc = self.do_test(
+            2, 0, gracedb_server=gracedb_url, force_noauth=force_noauth
+        )
+        self.assertIsNotNone(
+            getattr(coinc, "graceid", None), "GraceDB upload did not return a graceid"
+        )
+
 
 suite = unittest.TestSuite()
 suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestIOGraceDB))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     results = unittest.TextTestRunner(verbosity=2).run(suite)
     simple_exit(results)

@@ -75,6 +75,7 @@ class CandidateForGraceDB(object):
         self.coinc_results = coinc_results
         self.psds = kwargs['psds']
         self.basename = None
+        self.graceid = None
         if kwargs.get('gracedb'):
             self.gracedb = kwargs['gracedb']
 
@@ -403,6 +404,7 @@ class CandidateForGraceDB(object):
         # create GraceDB event
         logger.info('Uploading %s to GraceDB', fname)
         group = 'Test' if testing else 'CBC'
+        self.graceid = None
         gid = None
         try:
             response = self.gracedb.create_event(
@@ -413,6 +415,7 @@ class CandidateForGraceDB(object):
                 labels=labels
             )
             gid = response.json()["graceid"]
+            self.graceid = gid
             logger.info("Uploaded event %s", gid)
         except Exception as exc:
             logger.error('Failed to create GraceDB event')

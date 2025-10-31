@@ -63,7 +63,7 @@ if mpirun --help 2>&1 | grep -q -- ' -x '; then
     )
 fi
 
-mpirun --allow-run-as-root --hostfile /etc/mpi/hostfile -np 2 --bind-to none \
+mpirun --allow-run-as-root --hostfile /etc/mpi/hostfile -np 3 --bind-to none \
     --report-bindings --display-allocation --display-map \
     -x PATH -x LD_LIBRARY_PATH -x PYTHONPATH -x LAL_DATA_PATH \
     python -m mpi4py "$(command -v pycbc_live)" \

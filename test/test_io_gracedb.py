@@ -21,6 +21,8 @@ import random
 import tempfile
 import itertools
 import numpy as np
+import requests
+from urllib.parse import urljoin
 from utils import parse_args_cpu_only, simple_exit
 from pycbc.types import TimeSeries, FrequencySeries
 from pycbc.io.gracedb import CandidateForGraceDB
@@ -28,13 +30,6 @@ from pycbc.io.ligolw import LIGOLWContentHandler
 from igwn_ligolw import lsctables
 from igwn_ligolw import utils as ligolw_utils
 from lal import series as lalseries
-
-# if we have the GraceDb module then we can do deeper tests,
-# otherwise just fall back to quicker ones
-try:
-    from ligo.gracedb.rest import GraceDb
-except ImportError:
-    GraceDb = None
 
 
 # parse_args_cpu_only("io.gracedb")
@@ -56,7 +51,13 @@ class TestIOGraceDB(unittest.TestCase):
 
         self.possible_ifos = "H1 L1 V1 K1 I1".split()
 
-    def do_test(self, n_ifos, n_ifos_extra, gracedb_server=None, force_noauth=True):
+    def do_test(
+        self,
+        n_ifos,
+        n_ifos_extra,
+        gracedb_server=None,
+        basic_auth=None,
+    ):
         # choose a random selection of interferometers
         # n_ifos will be used to generate the simulated trigger including
         # significance followup
@@ -113,20 +114,15 @@ class TestIOGraceDB(unittest.TestCase):
 
         coinc_file_name = os.path.join(tempdir, "coinc.xml.gz")
 
-        if GraceDb is not None:
-            # Pretend to upload the event to GraceDB. The upload may fail in
-            # environments without a server, but it should not raise an
-            # exception and it should still leave the event file around.
-            upload_kwargs = {"testing": True}
-            if force_noauth:
-                upload_kwargs["force_noauth"] = True
-            if gracedb_server is not None:
-                upload_kwargs["gracedb_server"] = gracedb_server
-            else:
-                upload_kwargs["gracedb_server"] = "localhost"
+        if gracedb_server and basic_auth is not None:
+            upload_kwargs = {
+                "testing": True,
+                "gracedb_server": gracedb_server,
+                "basic_auth": basic_auth,
+            }
             coinc.upload(coinc_file_name, **upload_kwargs)
         else:
-            # no GraceDb module, so just save the coinc file
+            # no upload destination, so just save the coinc file
             coinc.save(coinc_file_name)
 
         # read back and check the coinc document
@@ -179,37 +175,38 @@ class TestIOGraceDB(unittest.TestCase):
         self.do_test(4, 1)
 
     def test_upload_to_local_gracedb(self):
-        if GraceDb is None:
-            self.skipTest("GraceDB client not installed")
         gracedb_url = os.environ.get(
             "PYCBC_TEST_GRACEDB_URL", "http://localhost:8080/api/"
         )
-        force_noauth_env = os.environ.get("PYCBC_TEST_GRACEDB_FORCE_NOAUTH", "1")
-        force_noauth = force_noauth_env.lower() not in ("0", "false", "no")
+        # username = os.environ.get("PYCBC_TEST_GRACEDB_USERNAME")
+        # password = os.environ.get("PYCBC_TEST_GRACEDB_PASSWORD")
+        username = "admin"
+        password = "mypassword"
+
+        if not username or not password:
+            self.skipTest("Basic-auth credentials not provided for GraceDB upload")
+
         try:
-            gdb_kwargs = {
-                "service_url": gracedb_url,
-                "reload_certificate": True,
-                "reload_buffer": 1,
-            }
-            if force_noauth:
-                gdb_kwargs["force_noauth"] = True
-            client = GraceDb(**gdb_kwargs)
-            response = client.ping()
+            response = requests.get(gracedb_url, auth=(username, password), timeout=5)
         except Exception as exc:
             self.skipTest(f"GraceDB server unavailable at {gracedb_url}: {exc}")
-        else:
-            status = getattr(response, "status", None)
-            if status is not None and status >= 400:
-                self.skipTest(f"GraceDB server ping failed with status {status}")
+
+        if response.status_code >= 400:
+            self.skipTest(
+                f"GraceDB server ping failed with status {response.status_code}"
+            )
 
         random.seed(12345)
         np.random.seed(12345)
         coinc = self.do_test(
-            2, 0, gracedb_server=gracedb_url, force_noauth=force_noauth
+            2,
+            0,
+            gracedb_server=gracedb_url,
+            basic_auth=(username, password),
         )
         self.assertIsNotNone(
-            getattr(coinc, "graceid", None), "GraceDB upload did not return a graceid"
+            getattr(coinc, "graceid", None),
+            "GraceDB upload did not return a graceid",
         )
 
 

@@ -1,4 +1,4 @@
-FROM python:3.11.14-trixie
+FROM python:3.11-slim-trixie
 
 ARG port=2222
 
@@ -26,6 +26,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     liblapack-dev \
     && rm -rf /var/lib/apt/lists/*
 
+ARG MPI_UID=1000
+ARG MPI_GID=1000
+
+RUN groupadd --gid "${MPI_GID}" mpi-user && \
+    useradd --uid "${MPI_UID}" --gid "${MPI_GID}" --create-home --shell /bin/bash mpi-user
+RUN install -d -m 700 -o mpi-user -g mpi-user /home/mpi-user/.ssh
+
 RUN pip install --no-cache-dir \
     "pycbc>=2.4" \
     lalsuite \
@@ -51,10 +58,13 @@ ENV LAL_DATA_PATH=/workspace/SEOBNRv4ROM
 COPY scripts .
 
 # Add priviledge separation directoy to run sshd as root.
-RUN mkdir -p /var/run/sshd
+RUN mkdir -p /var/run/sshd && \
+    chown mpi-user:mpi-user /var/run/sshd
 # Add capability to run sshd as non-root.
 RUN setcap CAP_NET_BIND_SERVICE=+eip /usr/sbin/sshd
 RUN apt remove libcap2-bin -y
+RUN chgrp mpi-user /etc/ssh/ssh_host_* && \
+    chmod 640 /etc/ssh/ssh_host_*
 
 # Allow OpenSSH to talk to containers without asking for confirmation
 # by disabling StrictHostKeyChecking.
@@ -72,8 +82,10 @@ COPY entrypoint.sh /opt/bin/entrypoint.sh
 RUN chmod +x /opt/bin/entrypoint.sh
 
 COPY run.sh /workspace/run.sh
-RUN chmod +x /workspace/run.sh
+RUN chmod +x /workspace/run.sh && \
+    chown -R mpi-user:mpi-user /workspace
 
 EXPOSE 22
+USER mpi-user
 ENTRYPOINT ["/opt/bin/entrypoint.sh"]
 CMD ["sleep", "infinity"]

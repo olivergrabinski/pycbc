@@ -12,16 +12,5 @@ trap 'kill $(jobs -p) 2>/dev/null || true' EXIT
 if [[ $# -eq 0 ]]; then
   wait
 else
-  exec sudo \
-    --preserve-env=PATH \
-    --preserve-env=LD_LIBRARY_PATH \
-    --preserve-env=PYTHONPATH \
-    --preserve-env=OMP_NUM_THREADS \
-    --preserve-env=HDF5_USE_FILE_LOCKING \
-    --preserve-env=LAL_DATA_PATH \
-    --preserve-env=MPI_NP \
-    --preserve-env=MPI_HOST_ARGS \
-    --preserve-env=MPI_EXTRA_FLAGS \
-    --preserve-env=MPI_BIND \
-    -H -u root "$@"
+  exec "$@"
 fi

@@ -5,6 +5,7 @@ metadata:
 spec:
   runPolicy:
     cleanPodPolicy: None
+  sshAuthMountPath: /home/mpi-user/.ssh
   runLauncherAsWorker: true
   mpiReplicaSpecs:
     Launcher:
@@ -12,6 +13,10 @@ spec:
       template:
         spec:
           restartPolicy: Never
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
           containers:
             - name: launcher
               image: pycbc-live:k8s
@@ -23,6 +28,8 @@ spec:
                   value: "--hostfile /etc/mpi/hostfile"
                 - name: MPI_EXTRA_FLAGS
                   value: "--tag-output --timestamp-output --display-map --report-bindings"
+                - name: LAL_DATA_PATH
+                  value: /workspace/SEOBNRv4ROM
               volumeMounts:
                 - name: shared-workspace
                   mountPath: /workspace/tmp
@@ -37,10 +44,17 @@ spec:
       template:
         spec:
           restartPolicy: Never
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
           containers:
             - name: worker
               image: pycbc-live:k8s
               imagePullPolicy: IfNotPresent
+              env:
+                - name: LAL_DATA_PATH
+                  value: /workspace/SEOBNRv4ROM
               volumeMounts:
                 - name: shared-workspace
                   mountPath: /workspace/tmp

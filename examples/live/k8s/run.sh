@@ -52,20 +52,7 @@ else
     MPI_OPTS+=(--display-map --report-bindings)
 fi
 
-MPI_EXPORT_ARGS=()
-if mpirun --help 2>&1 | grep -q -- ' -x '; then
-    MPI_EXPORT_ARGS+=(
-        -x PYTHONPATH
-        -x LD_LIBRARY_PATH
-        -x OMP_NUM_THREADS
-        -x VIRTUAL_ENV
-        -x PATH
-        -x HDF5_USE_FILE_LOCKING
-        -x LAL_DATA_PATH
-    )
-fi
-
-MPI_EXPORT_ARGS+=(
+MPI_EXPORT_ARGS=(
     -x PYTHONPATH
     -x LD_LIBRARY_PATH
     -x OMP_NUM_THREADS
@@ -75,7 +62,7 @@ MPI_EXPORT_ARGS+=(
     -x LAL_DATA_PATH
 )
 
-mpirun --allow-run-as-root \
+mpirun \
     "${MPI_OPTS[@]}" \
     "${MPI_EXPORT_ARGS[@]}" \
     python -m mpi4py "$(command -v pycbc_live)" \

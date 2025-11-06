@@ -18,7 +18,7 @@ spec:
               imagePullPolicy: IfNotPresent
               env:
                 - name: MPI_NP
-                  value: "2"
+                  value: "3"
                 - name: MPI_HOST_ARGS
                   value: "--hostfile /etc/mpi/hostfile"
                 - name: MPI_EXTRA_FLAGS

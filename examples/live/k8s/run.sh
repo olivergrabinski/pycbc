@@ -34,7 +34,6 @@ rm -rf ./output
 
 echo -e "\\n\\n>> [`date`] Running PyCBC Live"
 
-
 MPI_NP=${MPI_NP:-2}
 MPI_BIND=${MPI_BIND:---bind-to none}
 
@@ -46,8 +45,11 @@ MPI_OPTS+=(-np "${MPI_NP}")
 if [[ -n "${MPI_BIND:-}" ]]; then
     MPI_OPTS+=(${MPI_BIND})
 fi
+MPI_OPTS+=("--display-allocation")
 if [[ -n "${MPI_EXTRA_FLAGS:-}" ]]; then
     MPI_OPTS+=(${MPI_EXTRA_FLAGS})
+else
+    MPI_OPTS+=(--display-map --report-bindings)
 fi
 
 MPI_EXPORT_ARGS=()
@@ -63,9 +65,19 @@ if mpirun --help 2>&1 | grep -q -- ' -x '; then
     )
 fi
 
-mpirun --allow-run-as-root --hostfile /etc/mpi/hostfile -np 2 --bind-to none \
-    --report-bindings --display-allocation --display-map \
-    -x PATH -x LD_LIBRARY_PATH -x PYTHONPATH -x LAL_DATA_PATH \
+MPI_EXPORT_ARGS+=(
+    -x PYTHONPATH
+    -x LD_LIBRARY_PATH
+    -x OMP_NUM_THREADS
+    -x VIRTUAL_ENV
+    -x PATH
+    -x HDF5_USE_FILE_LOCKING
+    -x LAL_DATA_PATH
+)
+
+mpirun --allow-run-as-root \
+    "${MPI_OPTS[@]}" \
+    "${MPI_EXPORT_ARGS[@]}" \
     python -m mpi4py "$(command -v pycbc_live)" \
 --bank-file "${TEMPLATE_BANK}" \
 --sample-rate 2048 \

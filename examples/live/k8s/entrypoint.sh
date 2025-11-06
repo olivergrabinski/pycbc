@@ -19,5 +19,9 @@ else
     --preserve-env=OMP_NUM_THREADS \
     --preserve-env=HDF5_USE_FILE_LOCKING \
     --preserve-env=LAL_DATA_PATH \
+    --preserve-env=MPI_NP \
+    --preserve-env=MPI_HOST_ARGS \
+    --preserve-env=MPI_EXTRA_FLAGS \
+    --preserve-env=MPI_BIND \
     -H -u root "$@"
 fi

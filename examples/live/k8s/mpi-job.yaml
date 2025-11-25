@@ -19,8 +19,8 @@ spec:
             fsGroup: 1000
           containers:
             - name: launcher
-              image: pycbc-live:k8s
-              imagePullPolicy: IfNotPresent
+              image: olivergra/pycbc-live:k8s
+              imagePullPolicy: Always
               env:
                 - name: MPI_NP
                   value: "3"
@@ -50,8 +50,8 @@ spec:
             fsGroup: 1000
           containers:
             - name: worker
-              image: pycbc-live:k8s
-              imagePullPolicy: IfNotPresent
+              image: olivergra/pycbc-live:k8s
+              imagePullPolicy: Always
               env:
                 - name: LAL_DATA_PATH
                   value: /workspace/SEOBNRv4ROM

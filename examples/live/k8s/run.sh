@@ -138,8 +138,8 @@ mpirun \
 --background-ifar-limit 100 \
 --timeslide-interval 0.1 \
 --pvalue-combination-livetime 0.0005 \
---ifar-double-followup-threshold 0.0001 \
---ifar-upload-threshold 0.0001 \
+--ifar-double-followup-threshold 0.0000000001 \
+--ifar-upload-threshold 0.0000000001 \
 --round-start-time 4 \
 --start-time $gps_start_time \
 --end-time $gps_end_time \
@@ -158,6 +158,9 @@ mpirun \
 --single-reduced-chisq-threshold 2 \
 --single-fit-file "${SINGLE_SIG_FITS_FILE}" \
 --single-maximum-ifar 100 \
+--enable-gracedb-upload \
+--enable-single-detector-upload \
+--gracedb-server https://gracedb-proxy.flare.svc.cluster.local/api/ \
 --psd-variation \
 --verbose
 

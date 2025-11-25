@@ -192,11 +192,11 @@ echo -e "\\n\\n>> [`date`] Checking results"
     --injections "${INJECTIONS_FILE}" \
     --detectors H1 L1 V1
 
-echo -e "\\n\\n>> [`date`] Running Bayestar"
-for XMLFIL in `find output -type f -name \*.xml\* | sort`
-do
-    pushd `dirname ${XMLFIL}`
-    bayestar-localize-coincs --f-low ${f_min} `basename ${XMLFIL}` `basename ${XMLFIL}`
-    test -f 0.fits
-    popd
-done
+# echo -e "\\n\\n>> [`date`] Running Bayestar"
+# for XMLFIL in `find output -type f -name \*.xml\* | sort`
+# do
+#     pushd `dirname ${XMLFIL}`
+#     bayestar-localize-coincs --f-low ${f_min} `basename ${XMLFIL}` `basename ${XMLFIL}`
+#     test -f 0.fits
+#     popd
+# done

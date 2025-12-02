@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: scitoken
+spec:
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+# 1. Generate the token
+# htgettoken -a vault.ligo.org -i igwn
+# 2. Get the token
+# cat /tmp/bt_u501
+# export SCITOKEN=<scitoken>
+# 3. Start this pod and execute:
+# printf '%s' "$SCITOKEN" | kubectl exec -n flare -i scitoken-loader -- sh -c 'cat > /scitoken/token'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: scitoken-loader
+spec:
+  restartPolicy: Never
+  containers:
+    - name: loader
+      image: busybox:1.37
+      command: ["sh", "-c", "sleep 3600"]
+      volumeMounts:
+        - name: scitoken
+          mountPath: /scitoken
+  volumes:
+    - name: scitoken
+      persistentVolumeClaim:
+        claimName: scitoken

@@ -160,7 +160,7 @@ mpirun \
 --single-maximum-ifar 100 \
 --enable-gracedb-upload \
 --enable-single-detector-upload \
---gracedb-server https://gracedb-proxy.flare.svc.cluster.local/api/ \
+--gracedb-server https://gracedb.obsuks7.unige.ch/api/ \
 --psd-variation \
 --verbose
 

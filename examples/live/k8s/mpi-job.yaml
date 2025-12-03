@@ -30,16 +30,11 @@ spec:
                   value: "--tag-output --timestamp-output --display-map --report-bindings"
                 - name: LAL_DATA_PATH
                   value: /workspace/SEOBNRv4ROM
-                - name: REQUESTS_CA_BUNDLE
-                  value: /etc/gracedb-proxy-tls/tls.crt
                 - name: SCITOKEN_FILE
                   value: /etc/scitoken/token
               volumeMounts:
                 - name: shared-workspace
                   mountPath: /workspace/tmp
-                - name: gracedb-proxy-tls
-                  mountPath: /etc/gracedb-proxy-tls
-                  readOnly: true
                 - name: scitoken
                   mountPath: /etc/scitoken
                   readOnly: true
@@ -49,9 +44,6 @@ spec:
             - name: shared-workspace
               persistentVolumeClaim:
                 claimName: input-data
-            - name: gracedb-proxy-tls
-              secret:
-                secretName: gracedb-proxy-tls
             - name: scitoken
               persistentVolumeClaim:
                 claimName: scitoken

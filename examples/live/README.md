@@ -47,7 +47,7 @@ The manifests in `k8s/` assume payloads are mounted at `/workspace/tmp`. Follow 
    ```
 3. Ensure the [Kubeflow MPI Operator](https://github.com/kubeflow/mpi-operator) is installed. The simplest path is to apply the bundled kustomization (do this once per cluster):
    ```bash
-   kubectl apply -k k8s
+   kubectl apply --server-side -f https://raw.githubusercontent.com/kubeflow/mpi-operator/v0.7.0/deploy/v2beta1/mpi-operator.yaml
    ```
 4. Provision a persistent volume and a temporary pod that keeps it mounted:
    ```bash

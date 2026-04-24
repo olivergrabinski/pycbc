@@ -82,7 +82,9 @@ COPY entrypoint.sh /opt/bin/entrypoint.sh
 RUN chmod +x /opt/bin/entrypoint.sh
 
 COPY run.sh /workspace/run.sh
-RUN chmod +x /workspace/run.sh && \
+COPY o4-full-bandwidth /workspace/o4-full-bandwidth
+
+RUN chmod +x /workspace/run.sh /workspace/o4-full-bandwidth/run.sh && \
     chown -R mpi-user:mpi-user /workspace
 
 EXPOSE 22

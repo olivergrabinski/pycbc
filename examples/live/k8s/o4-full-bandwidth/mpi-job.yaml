@@ -1,0 +1,142 @@
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: pycbc-live-o4-full-bandwidth
+spec:
+  runPolicy:
+    cleanPodPolicy: None
+  sshAuthMountPath: /home/mpi-user/.ssh
+  runLauncherAsWorker: true
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+          containers:
+            - name: launcher
+              image: olivergra/pycbc-live:k8s
+              imagePullPolicy: Always
+              env:
+                - name: MPI_NP
+                  value: "3"
+                - name: MPI_HOST_ARGS
+                  value: "--hostfile /etc/mpi/hostfile"
+                - name: MPI_EXTRA_FLAGS
+                  value: "--tag-output --timestamp-output --display-map --report-bindings"
+                - name: OMP_NUM_THREADS
+                  value: "4"
+                - name: CONF_DIR
+                  value: /workspace/o4-config
+                - name: BANK_FILE
+                  value: /workspace/o4-config/bank/O4_TEST_SMALL_BANK.hdf
+                - name: LOCAL_DIR
+                  value: /workspace/o4-output
+                - name: FRAME_DIR
+                  value: /workspace/frames
+                - name: H1_FRAME_DIR
+                  value: /workspace/frames/H1_O4LLPIC
+                - name: L1_FRAME_DIR
+                  value: /workspace/frames/L1_O4LLPIC
+                - name: V1_FRAME_DIR
+                  value: /workspace/frames/V1_O4LLPIC
+                - name: LAL_DATA_PATH
+                  value: /workspace/SEOBNRv4ROM
+                - name: ENABLE_GRACEDB_UPLOAD
+                  value: "false"
+                - name: GRACEDB_SERVER
+                  value: https://gracedb-playground.ligo.org/api/
+                - name: BEARER_TOKEN_FILE
+                  value: /etc/scitoken/token
+              volumeMounts:
+                - name: o4-config
+                  mountPath: /workspace/o4-config
+                  readOnly: true
+                - name: o4-output
+                  mountPath: /workspace/o4-output
+                - name: frame-data
+                  mountPath: /workspace/frames
+                  readOnly: true
+                - name: scitoken
+                  mountPath: /etc/scitoken
+                  readOnly: true
+              args:
+                - /workspace/o4-full-bandwidth/run.sh
+          volumes:
+            - name: o4-config
+              persistentVolumeClaim:
+                claimName: o4-full-bandwidth-config
+            - name: o4-output
+              persistentVolumeClaim:
+                claimName: o4-full-bandwidth-output
+            - name: frame-data
+              persistentVolumeClaim:
+                claimName: igwn-lldd-frames
+            - name: scitoken
+              persistentVolumeClaim:
+                claimName: scitoken
+    Worker:
+      replicas: 2
+      template:
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+          containers:
+            - name: worker
+              image: olivergra/pycbc-live:k8s
+              imagePullPolicy: Always
+              env:
+                - name: OMP_NUM_THREADS
+                  value: "4"
+                - name: CONF_DIR
+                  value: /workspace/o4-config
+                - name: BANK_FILE
+                  value: /workspace/o4-config/bank/O4_TEST_SMALL_BANK.hdf
+                - name: LOCAL_DIR
+                  value: /workspace/o4-output
+                - name: FRAME_DIR
+                  value: /workspace/frames
+                - name: H1_FRAME_DIR
+                  value: /workspace/frames/H1_O4LLPIC
+                - name: L1_FRAME_DIR
+                  value: /workspace/frames/L1_O4LLPIC
+                - name: V1_FRAME_DIR
+                  value: /workspace/frames/V1_O4LLPIC
+                - name: LAL_DATA_PATH
+                  value: /workspace/SEOBNRv4ROM
+                - name: ENABLE_GRACEDB_UPLOAD
+                  value: "false"
+                - name: BEARER_TOKEN_FILE
+                  value: /etc/scitoken/token
+              volumeMounts:
+                - name: o4-config
+                  mountPath: /workspace/o4-config
+                  readOnly: true
+                - name: o4-output
+                  mountPath: /workspace/o4-output
+                - name: frame-data
+                  mountPath: /workspace/frames
+                  readOnly: true
+                - name: scitoken
+                  mountPath: /etc/scitoken
+                  readOnly: true
+          volumes:
+            - name: o4-config
+              persistentVolumeClaim:
+                claimName: o4-full-bandwidth-config
+            - name: o4-output
+              persistentVolumeClaim:
+                claimName: o4-full-bandwidth-output
+            - name: frame-data
+              persistentVolumeClaim:
+                claimName: igwn-lldd-frames
+            - name: scitoken
+              persistentVolumeClaim:
+                claimName: scitoken
